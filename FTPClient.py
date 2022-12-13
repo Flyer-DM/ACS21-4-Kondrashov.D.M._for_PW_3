@@ -11,7 +11,6 @@ def cts(filename: str) -> None:
 def ctc() -> None:
     """Принятие файла с сервера"""
     filename = sock.recv(1024).decode()
-    print(filename)
     a = b''
     while True:
         data = sock.recv(1024)
@@ -27,17 +26,17 @@ PORT = 1025
 print("Для помощи напишите help.")
 while True:
     request = input('>')
-
     sock = socket.socket()
     sock.connect((HOST, PORT))
     sock.send(request.encode())
     if request[:4] == 'cts ':
         cts(request[4:])
-
     response = sock.recv(1024).decode()
     if response == 'file':
         ctc()
-    print(response)
+        print("Принятие файла от сервера.")
+    else:
+        print(response)
     sock.close()
     if response == 'exit':
         print("Отключение от сервера.")

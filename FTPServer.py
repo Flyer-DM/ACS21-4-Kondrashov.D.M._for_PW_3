@@ -1,10 +1,13 @@
 import socket
 import os
+from datetime import datetime
 
 
-PORT = 1025
-os.chdir('users')
-curr_dir = os.getcwd()
+def logging(message: str) -> None:
+    message = f"{datetime.now()} | {message}\n"
+    with open(working_dir + '/logs.txt', 'a') as logs:
+        logs.write(message)
+    print(message)
 
 
 def help() -> str:
@@ -30,7 +33,7 @@ def cat(req: str) -> str:
         with open(filename) as f:
             return f.read()
     except OSError:
-        return "Файл не найден"
+        return "Файл не найден."
 
 
 def mkdir(req: str) -> str:
@@ -42,20 +45,24 @@ def mkdir(req: str) -> str:
         dirname = dirname.replace('/', '\\')
         return f"Папка {dirname} успешно создана."
     except OSError:
-        return "This directory already exists"
+        return "Папка с таким именем уже существует."
 
 
 def rmdir(req: str):
     """Удаление директории рекурсивно"""
     try:
         os.rmdir(curr_dir+'/'+req)
+        return f"{req} удалена."
     except:
         os.chdir(curr_dir+'/'+req)
         for i in os.listdir(curr_dir+'/'+req):
             try:
-                rmdir(req+'/'+i)
+                inner_dir = req+'/'+i
+                rmdir(inner_dir)
+                return f"{inner_dir} удалена."
             except:
                 os.remove(i)
+                return f"{i} удалён."
         os.chdir(curr_dir+'/..')
         os.rmdir(curr_dir+'/'+req)
 
@@ -112,7 +119,7 @@ def process(req):
     elif req == 'pwd':
         return curr_dir
     elif req == 'ls':
-        return '\n'.join(os.listdir(curr_dir))
+        return ' '.join(os.listdir(curr_dir))
     elif req[:4] == 'cat ':
         return cat(req)
     elif req[:6] == 'mkdir ':
@@ -130,21 +137,32 @@ def process(req):
     elif req == 'help':
         return help()
     else:
-        return 'bad request'
+        return 'Неизвестная команда'
 
+
+PORT = 1025
+working_dir = os.getcwd()
+if 'users' in os.listdir(os.getcwd()):
+    os.chdir('users')
+else:
+    os.mkdir(os.getcwd() + '/' + 'users')
+    os.chdir('users')
+curr_dir = os.getcwd()
 
 sock = socket.socket()
 sock.bind(('', PORT))
 
 sock.listen()
+logging("Сервер запущен.")
 while True:
-    print("Сервер запущен.")
     conn, addr = sock.accept()
     conn.settimeout(1)
 
     request = conn.recv(1024).decode()
-    print(request)
+    logging(request)
     response = process(request)
     conn.send(response.encode())
 
     conn.close()
+    if request == 'exit':
+        break
